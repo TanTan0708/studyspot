@@ -5,6 +5,7 @@ import Features from "./components/Features";
 import HowItWorks from "./components/HowItWorks";
 import StudyScore from "./components/StudyScore";
 import { CTA, Footer } from "./components/Footer";
+import 'leaflet/dist/leaflet.css';
 
 export default function App() {
   useEffect(() => {
