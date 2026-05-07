@@ -73,26 +73,20 @@ function Recenter({ pos }) {
 
 // ── Cafe data ─────────────────────────────────────────────────────────────────
 // Coords are placeholders — swap with your actual cafe locations.
-const cafes = [
-  {
-    icon: "☕",
-    iconClass: "warm",
-    name: "Brewed Awakening",
-    meta: "WiFi · Outlets · Quiet · Open till 11 PM",
-    score: "9.2",
-    lat: 14.5547,
-    lng: 121.0509,
-  },
-  {
-    icon: "🌿",
-    iconClass: "green",
-    name: "The Leaf Collective",
-    meta: "WiFi · Moderate · Open till 10 PM",
-    score: "8.7",
-    lat: 14.5565,
-    lng: 121.0478,
-  },
-];
+// At the top, remove the hardcoded cafes array and replace with this:
+const [cafes, setCafes] = useState([]);
+
+useEffect(() => {
+  // Replace this URL with your Render URL once deployed
+  const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
+
+  fetch(`${SERVER_URL}/api/cafes`)
+    .then((res) => res.json())
+    .then((data) => {
+      setCafes(data);
+    })
+    .catch((err) => console.error("Failed to fetch cafes:", err));
+}, []);
 
 export default function MapCard() {
   const [userPos, setUserPos] = useState(null);   // [lat, lng] once GPS resolves
