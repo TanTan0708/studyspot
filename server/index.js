@@ -13,6 +13,7 @@ app.use(cors({
   origin: [
     "http://localhost:5173",
     "https://studyspot1.vercel.app",  // ← your actual Vercel URL
+    "https://studyspotph.vercel.app"
   ]
 }));
 
