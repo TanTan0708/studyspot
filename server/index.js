@@ -11,8 +11,8 @@ const PORT = process.env.PORT || 3000;
 // Replace the URL below with your actual Vercel URL once deployed
 app.use(cors({
   origin: [
-    "http://localhost:5173",          // local dev (Vite default)
-    "https://your-app.vercel.app",    // replace with your real Vercel URL
+    "http://localhost:5173",
+    "https://studyspot1.vercel.app",  // ← your actual Vercel URL
   ]
 }));
 
