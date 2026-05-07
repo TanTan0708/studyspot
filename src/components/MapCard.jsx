@@ -78,7 +78,7 @@ const [cafes, setCafes] = useState([]);
 
 useEffect(() => {
   // Replace this URL with your Render URL once deployed
-  const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
+  const SERVER_URL = import.meta.env.VITE_SERVER_URL || "https://studyspot-i2sk.onrender.com";
 
   fetch(`${SERVER_URL}/api/cafes`)
     .then((res) => res.json())
