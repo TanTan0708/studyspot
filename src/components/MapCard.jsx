@@ -73,25 +73,25 @@ function Recenter({ pos }) {
 
 // ── Cafe data ─────────────────────────────────────────────────────────────────
 // Coords are placeholders — swap with your actual cafe locations.
-// At the top, remove the hardcoded cafes array and replace with this:
-const [cafes, setCafes] = useState([]);
 
-useEffect(() => {
-  // Replace this URL with your Render URL once deployed
-  const SERVER_URL = import.meta.env.VITE_SERVER_URL || "https://studyspot-i2sk.onrender.com";
-
-  fetch(`${SERVER_URL}/api/cafes`)
-    .then((res) => res.json())
-    .then((data) => {
-      setCafes(data);
-    })
-    .catch((err) => console.error("Failed to fetch cafes:", err));
-}, []);
 
 export default function MapCard() {
   const [userPos, setUserPos] = useState(null);   // [lat, lng] once GPS resolves
   const [geoError, setGeoError] = useState(null); // string if denied / unavailable
+// At the top, remove the hardcoded cafes array and replace with this:
+  const [cafes, setCafes] = useState([]);
 
+  useEffect(() => {
+    // Replace this URL with your Render URL once deployed
+    const SERVER_URL = import.meta.env.VITE_SERVER_URL || "https://studyspot-i2sk.onrender.com";
+
+    fetch(`${SERVER_URL}/api/cafes`)
+      .then((res) => res.json())
+      .then((data) => {
+        setCafes(data);
+      })
+      .catch((err) => console.error("Failed to fetch cafes:", err));
+  }, []);
   // ── Real-time location tracking ────────────────────────────────────────────
   // watchPosition fires immediately AND every time the device moves.
   // We hold off rendering <MapContainer> until the first fix comes in so
