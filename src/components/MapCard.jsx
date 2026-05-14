@@ -405,7 +405,7 @@ export default function MapCard({ searchQuery, nearMeActive, onNearMeUsed }) {
               <Recenter pos={userPos} />
               <Marker position={userPos} icon={youAreHereIcon} />
               {filteredCafes.map((cafe) => (
-                <Marker key={cafe.cafe_id} position={[Number(cafe.lat), Number(cafe.lng)]} icon={createCustomIcon("public/marker-pin-02-svgrepo-com.svg")} eventHandlers={{ click: () => setSelectedCafe(cafe) }} />
+                <Marker key={cafe.cafe_id} position={[Number(cafe.lat), Number(cafe.lng)]} icon={createCustomIcon("/marker-pin-02-svgrepo-com.svg")} eventHandlers={{ click: () => setSelectedCafe(cafe) }} />
               ))}
             </MapContainer>
           ) : <div className="map-loading">Loading Map…</div>}
