@@ -11,28 +11,27 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-// ── NEW: Custom Image Icon Function ──────────────────────────────────────────
-// This creates a circular marker using the image path provided in your data
+// ── Custom Image Icon — made smaller ─────────────────────────────────────────
 function createCustomIcon(imagePath) {
   return L.divIcon({
     className: "custom-marker-container",
     html: `
       <div style="
         position: relative;
-        width: 45px;
-        height: 45px;
+        width: 28px;
+        height: 28px;
         background: white;
         border-radius: 50% 50% 50% 0;
         transform: rotate(-45deg);
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        box-shadow: 0 3px 6px rgba(0,0,0,0.25);
         border: 2px solid white;
       ">
         <div style="
-          width: 38px;
-          height: 38px;
+          width: 22px;
+          height: 22px;
           border-radius: 50%;
           background-image: url('${imagePath}');
           background-size: cover;
@@ -41,9 +40,9 @@ function createCustomIcon(imagePath) {
         "></div>
       </div>
     `,
-    iconSize: [20, 20],
-    iconAnchor: [22, 45], // Anchors the "point" of the pin to the coordinates
-    popupAnchor: [0, -45],
+    iconSize: [28, 28],
+    iconAnchor: [14, 28],
+    popupAnchor: [0, -30],
   });
 }
 
@@ -103,34 +102,47 @@ export default function MapCard() {
           <span className="card-badge">● Live</span>
         </div>
 
-        <div className="map-placeholder" style={{ padding: 0, overflow: "hidden", borderRadius: "12px" }}>
-          {!userPos && !geoError && <div className="loading-state">📍 Getting location…</div>}
+        {/* Map — taller now to fill the card better */}
+        <div
+          className="map-placeholder"
+          style={{ padding: 0, overflow: "hidden", borderRadius: "12px", height: "240px" }}
+        >
+          {!userPos && !geoError && (
+            <div className="loading-state">📍 Getting location…</div>
+          )}
           {geoError && <div className="error-state">⚠️ {geoError}</div>}
 
           {userPos && (
-            <MapContainer center={userPos} zoom={16} scrollWheelZoom={false} style={{ width: "100%", height: "100%" }}>
+            <MapContainer
+              center={userPos}
+              zoom={16}
+              scrollWheelZoom={false}
+              style={{ width: "100%", height: "100%" }}
+            >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               <Recenter pos={userPos} />
-              
+
               <Marker position={userPos} icon={youAreHereIcon}>
                 <Popup>You are here 📍</Popup>
               </Marker>
 
-              {/* Updated Cafe Markers using image path */}
               {cafes.map((cafe) => (
                 <Marker
                   key={cafe.name}
                   position={[cafe.lat, cafe.lng]}
-                  // Assuming your backend data now has a 'cafeImage' or 'imagePath' property
                   icon={createCustomIcon("public/marker-pin-02-svgrepo-com.svg")}
                 >
                   <Popup>
-                    <strong>{cafe.name}</strong><br />
-                    {cafe.meta}<br />
-                    <span style={{ color: "#7c6fe0", fontWeight: 600 }}>Score: {cafe.score}</span>
+                    <strong>{cafe.name}</strong>
+                    <br />
+                    {cafe.meta}
+                    <br />
+                    <span style={{ color: "#C4842A", fontWeight: 600 }}>
+                      Score: {cafe.score}
+                    </span>
                   </Popup>
                 </Marker>
               ))}
@@ -138,23 +150,39 @@ export default function MapCard() {
           )}
         </div>
 
-        {/* Cafe List below map */}
-        {cafes.map((cafe) => (
-          <div className="cafe-mini-card" key={cafe.name}>
-             {/* Render the image in the list as well */}
-            <img 
-              src={"public/coffee-689-svgrepo-com.svg"} 
-              alt={cafe.name} 
-              className="cafe-icon" 
-              style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} 
-            />
-            <div className="cafe-info">
-              <div className="cafe-name">{cafe.name}</div>
-              <div className="cafe-meta">{cafe.meta}</div>
-            </div>
-            <div className="study-score">{cafe.score}</div>
+        {/* Scrollable cafe list — shows ~3 items, hint arrow if more */}
+        <div className="cafe-list-wrapper">
+          <div className="cafe-list-scroll">
+            {cafes.map((cafe) => (
+              <div className="cafe-mini-card" key={cafe.name}>
+                <img
+                  src={"public/coffee-689-svgrepo-com.svg"}
+                  alt={cafe.name}
+                  className="cafe-icon"
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "8px",
+                    objectFit: "cover",
+                  }}
+                />
+                <div className="cafe-info">
+                  <div className="cafe-name">{cafe.name}</div>
+                  <div className="cafe-meta">{cafe.meta}</div>
+                </div>
+                <div className="study-score">{cafe.score}</div>
+              </div>
+            ))}
           </div>
-        ))}
+
+          {/* Scroll hint — only shows when there are more than 3 cafes */}
+          {cafes.length > 3 && (
+            <div className="cafe-scroll-hint">
+              <span>↓</span>
+              <span>{cafes.length - 3} more</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
