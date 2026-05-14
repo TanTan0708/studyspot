@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import MapCard from "./MapCard";
 
 export default function Hero() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [nearMeActive, setNearMeActive] = useState(false);
 
   useEffect(() => {
     const els = document.querySelectorAll(".hero .fade-up");
@@ -11,6 +12,21 @@ export default function Hero() {
     }, 100);
     return () => clearTimeout(timer);
   }, []);
+
+  // Called by MapCard after it handles the Near Me trigger
+  const handleNearMeUsed = useCallback(() => {
+    setNearMeActive(false);
+  }, []);
+
+  function handleSearchButtonClick() {
+    if (searchQuery) {
+      // If there's text, clear it (existing behaviour)
+      setSearchQuery("");
+    } else {
+      // If empty, fire Near Me filter
+      setNearMeActive(true);
+    }
+  }
 
   return (
     <section className="hero">
@@ -33,7 +49,7 @@ export default function Hero() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <button className="search-btn" onClick={() => setSearchQuery("")}>
+          <button className="search-btn" onClick={handleSearchButtonClick}>
             {searchQuery ? "✕ Clear" : "📍 Near me"}
           </button>
         </div>
@@ -44,8 +60,11 @@ export default function Hero() {
       </div>
 
       <div className="hero-right">
-        {/* Pass the searchQuery state as a prop to MapCard */}
-        <MapCard searchQuery={searchQuery} />
+        <MapCard
+          searchQuery={searchQuery}
+          nearMeActive={nearMeActive}
+          onNearMeUsed={handleNearMeUsed}
+        />
       </div>
     </section>
   );
