@@ -16,10 +16,11 @@ export function Footer() {
   return (
     <footer>
       <div className="footer-logo">
-        ☕ Study<span>Spot</span>
+        <img src="/studySpotLogoBig.png" alt="StudySpot" style={{ height: "28px", width: "auto" }} />
+        Study<span>Spot</span>
       </div>
       <div>CMSC 126 · Web-Based Management · Group 1, Section B-2L</div>
-      <div>Delosa · Mernilo · Orcelino</div>
+      <div>Delosa · Mernilo</div>
     </footer>
   );
 }
