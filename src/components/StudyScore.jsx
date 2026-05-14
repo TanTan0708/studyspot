@@ -1,11 +1,11 @@
 import { useState } from "react";
 
 const chips = [
-  { label: "📶 WiFi", defaultActive: true },
-  { label: "🔌 Outlets", defaultActive: false },
-  { label: "🔇 Noise", defaultActive: false },
-  { label: "🌙 Late hours", defaultActive: false },
-  { label: "💸 Min. spend", defaultActive: false },
+  { label: " WiFi", defaultActive: true },
+  { label: " Outlets", defaultActive: false },
+  { label: " Noise", defaultActive: false },
+  { label: " Late hours", defaultActive: false },
+  { label: " Min. spend", defaultActive: false },
 ];
 
 const scoreRows = [
