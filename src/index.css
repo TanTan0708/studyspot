@@ -729,9 +729,33 @@ footer {
 @media (max-width: 768px) {
   nav { padding: 1.2rem 1.5rem; }
   .nav-links { display: none; }
-  .hero { grid-template-columns: 1fr; }
-  .hero-right { display: none; }
-  .hero-left { padding: 4rem 1.5rem; }
+
+  /* Stack hero vertically — left text on top, map below */
+  .hero {
+    grid-template-columns: 1fr;
+    min-height: unset;
+  }
+  .hero-left { padding: 4rem 1.5rem 2rem; }
+
+  /* Show the map panel on mobile instead of hiding it */
+  .hero-right {
+    display: flex;
+    padding: 1.5rem;
+    min-height: unset;
+    background: var(--cream);
+  }
+
+  /* Restore card look (it's floating inside cream bg now) */
+  .map-card {
+    border-radius: 20px;
+    padding: 1.6rem;
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    box-shadow: 0 12px 40px rgba(28,16,8,0.1);
+    animation: none; /* disable float on mobile to avoid scroll jank */
+  }
+
   .features-grid { grid-template-columns: 1fr; }
   .steps { grid-template-columns: 1fr; gap: 2rem; }
   .steps::before { display: none; }
@@ -824,13 +848,4 @@ footer {
   50%       { transform: translateY(3px); }
 }
 
-/* On mobile, restore card styling since hero-right is hidden anyway */
-@media (max-width: 768px) {
-  .hero-right { display: none; }
-  .map-card {
-    border-radius: 20px;
-    padding: 1.6rem;
-    width: min(380px, 100%);
-    box-shadow: 0 24px 64px rgba(28,16,8,0.1);
-  }
-}
+/* On mobile, card is shown in stacked layout — see responsive block above */
