@@ -45,17 +45,10 @@ function Recenter({ pos }) {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function scoreColor(score) {
-  if (score === null || score === undefined) return "#94a3b8";
-  const numScore = Number(score);
-  if (numScore === 0) return "#94a3b8";
-  if (numScore >= 7.5) return "#22c55e";
-  if (numScore >= 5.0) return "#f59e0b";
+  if (score === null || score === undefined || score === 0) return "#94a3b8";
+  if (score >= 7.5) return "#22c55e";
+  if (score >= 5.0) return "#f59e0b";
   return "#ef4444";
-}
-
-function scoreLabel(score) {
-  if (!score || Number(score) === 0) return "—";
-  return Number(score).toFixed(1);
 }
 
 function formatTime(timeStr) {
@@ -132,7 +125,7 @@ function FilterPanel({ filters, onChange, onReset, activeCount }) {
       <FilterRow label="🔊 Noise level" value={filters.noise} options={[["any","Any"],["quiet","Quiet"],["moderate","Moderate"],["loud","Loud"]]} onChange={(v) => onChange({ ...filters, noise: v })} />
       <div style={{ marginBottom: "10px" }}>
         <div style={{ fontSize: "11px", color: "#64748b", fontWeight: 600, marginBottom: "6px" }}>
-          ⭐ Min. StudyScore: <span style={{ color: "#1e293b" }}>{filters.minScore > 0 ? Number(filters.minScore).toFixed(1) : "Any"}</span>
+          ⭐ Min. StudyScore: <span style={{ color: "#1e293b" }}>{filters.minScore > 0 ? filters.minScore.toFixed(1) : "Any"}</span>
         </div>
         <input type="range" min="0" max="10" step="0.5" value={filters.minScore} onChange={(e) => onChange({ ...filters, minScore: parseFloat(e.target.value) })} style={{ width: "100%", accentColor: "#3b82f6" }} />
       </div>
@@ -167,38 +160,51 @@ function FilterRow({ label, value, options, onChange }) {
   );
 }
 
+// ─── Review Star Input ────────────────────────────────────────────────────────
+
+function StarRatingInput({ label, value, onChange }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+      <span style={{ fontSize: "12px", fontWeight: 600, color: "#475569" }}>{label}</span>
+      <div style={{ display: "flex", gap: "4px" }}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <span
+            key={star}
+            onClick={() => onChange(star)}
+            style={{
+              cursor: "pointer",
+              fontSize: "18px",
+              filter: star <= value ? "none" : "grayscale(100%)",
+              opacity: star <= value ? 1 : 0.3,
+              transition: "transform 0.1s"
+            }}
+          >⭐</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Cafe Detail Modal ────────────────────────────────────────────────────────
 
-function CafeModal({ cafe, onClose, reviews, onAddReview }) {
-  const [userRating, setUserRating] = useState(5);
-  const [userComment, setUserComment] = useState("");
+function CafeModal({ cafe, onClose, reviews, onAddReview, calculatedScore }) {
+  const [formData, setFormData] = useState({
+    wifi: 5, noise: 5, outlet: 5, vibe: 5, comment: ""
+  });
 
   if (!cafe) return null;
 
   const cafeReviews = reviews[cafe.cafe_id] || [];
-  
-  // Calculate a "Live" StudyScore combining DB score and Local Reviews
-  // We map 5 stars to a 10-point scale for consistency
-  const calculateAggregate = () => {
-    const dbScore = Number(cafe.aggregate_score) || 0;
-    if (cafeReviews.length === 0) return dbScore;
-    const localAvg = (cafeReviews.reduce((acc, r) => acc + r.rating, 0) / cafeReviews.length) * 2;
-    return dbScore > 0 ? (dbScore + localAvg) / 2 : localAvg;
-  };
+  const color = scoreColor(calculatedScore);
 
-  const finalScore = calculateAggregate();
-  const color = scoreColor(finalScore);
-
-  const handleSubmitReview = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (!userComment.trim()) return;
+    if (!formData.comment.trim()) return;
     onAddReview(cafe.cafe_id, {
-      rating: userRating,
-      comment: userComment,
+      ...formData,
       date: new Date().toLocaleDateString(),
     });
-    setUserComment("");
-    setUserRating(5);
+    setFormData({ wifi: 5, noise: 5, outlet: 5, vibe: 5, comment: "" });
   };
 
   return createPortal(
@@ -211,83 +217,60 @@ function CafeModal({ cafe, onClose, reviews, onAddReview }) {
       }}
     >
       <div style={{
-        background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "420px",
+        background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "440px",
         maxHeight: "90vh", boxShadow: "0 24px 60px rgba(0,0,0,0.25)", overflowY: "auto",
       }}>
-        {/* Header */}
-        <div style={{
-          background: "linear-gradient(135deg, #1e293b 0%, #334155 100%)",
-          padding: "24px", position: "relative",
-        }}>
+        <div style={{ background: "linear-gradient(135deg, #1e293b 0%, #334155 100%)", padding: "24px", position: "relative" }}>
           <button onClick={onClose} style={{ position: "absolute", top: "16px", right: "16px", background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", width: "28px", height: "28px", borderRadius: "50%", cursor: "pointer" }}>✕</button>
           <div style={{ fontSize: "22px", marginBottom: "6px" }}>☕</div>
           <h2 style={{ margin: "0 0 4px", color: "#fff", fontSize: "20px", fontWeight: 700 }}>{cafe.name}</h2>
           <p style={{ margin: 0, color: "#94a3b8", fontSize: "12px" }}>📍 {cafe.address}</p>
         </div>
 
-        {/* StudyScore banner */}
         <div style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0", padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <div style={{ fontSize: "11px", color: "#64748b", fontWeight: 600, textTransform: "uppercase" }}>StudyScore</div>
-            <div style={{ fontSize: "11px", color: "#94a3b8" }}>Based on student insights</div>
+            <div style={{ fontSize: "11px", color: "#94a3b8" }}>{cafeReviews.length > 0 ? "Based on local reviews" : "Initial rating from attributes"}</div>
           </div>
-          <div style={{ background: color, color: "#fff", fontWeight: 800, fontSize: "22px", borderRadius: "12px", padding: "6px 14px" }}>
-            {scoreLabel(finalScore)}
+          <div style={{ background: color, color: "#fff", fontWeight: 800, fontSize: "24px", borderRadius: "12px", padding: "6px 16px" }}>
+            {calculatedScore.toFixed(1)}
           </div>
         </div>
 
-        {/* Info grid */}
-        <div style={{ padding: "20px 24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-          <InfoTile icon="📶" label="WiFi" value={cafe.wifi_available ? "Available" : "No"} positive={cafe.wifi_available} />
-          <InfoTile icon="🔌" label="Outlets" value={cafe.outlet_available ? "Available" : "No"} positive={cafe.outlet_available} />
-          <InfoTile icon="🔊" label="Noise" value={capitalize(cafe.noise_level)} />
-          <InfoTile icon="🕒" label="Closes" value={formatTime(cafe.closing_time)} />
-        </div>
-
-        {/* Review Section */}
-        <div style={{ padding: "0 24px 24px" }}>
-          <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: "20px" }}>
-            <h3 style={{ fontSize: "14px", fontWeight: 700, margin: "0 0 12px" }}>Community Reviews</h3>
+        <div style={{ padding: "20px 24px" }}>
+          <h3 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "12px", color: "#1e293b" }}>Leave a Review</h3>
+          <form onSubmit={handleSubmit} style={{ background: "#f1f5f9", padding: "16px", borderRadius: "16px", marginBottom: "20px" }}>
+            <StarRatingInput label="📶 WiFi Quality" value={formData.wifi} onChange={(v) => setFormData({...formData, wifi: v})} />
+            <StarRatingInput label="🔊 Noise Level" value={formData.noise} onChange={(v) => setFormData({...formData, noise: v})} />
+            <StarRatingInput label="🔌 Outlets" value={formData.outlet} onChange={(v) => setFormData({...formData, outlet: v})} />
+            <StarRatingInput label="✨ Vibe" value={formData.vibe} onChange={(v) => setFormData({...formData, vibe: v})} />
             
-            {/* Review List */}
-            <div style={{ maxHeight: "150px", overflowY: "auto", marginBottom: "16px" }}>
-              {cafeReviews.length === 0 ? (
-                <p style={{ fontSize: "12px", color: "#94a3b8", fontStyle: "italic" }}>No reviews yet. Be the first!</p>
-              ) : (
-                cafeReviews.map((r, i) => (
-                  <div key={i} style={{ padding: "8px", background: "#f8fafc", borderRadius: "8px", marginBottom: "8px", border: "1px solid #f1f5f9" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                      <span style={{ fontSize: "11px", fontWeight: 700, color: "#3b82f6" }}>{"⭐".repeat(r.rating)}</span>
-                      <span style={{ fontSize: "10px", color: "#94a3b8" }}>{r.date}</span>
-                    </div>
-                    <p style={{ margin: 0, fontSize: "12px", color: "#475569" }}>{r.comment}</p>
-                  </div>
-                ))
-              )}
-            </div>
+            <textarea
+              placeholder="How's the WiFi speed? Are there many outlets? Is it too loud?"
+              value={formData.comment}
+              onChange={(e) => setFormData({...formData, comment: e.target.value})}
+              style={{ width: "100%", marginTop: "8px", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "10px", fontSize: "12px", minHeight: "60px", resize: "none" }}
+            />
+            <button type="submit" style={{ width: "100%", marginTop: "12px", padding: "10px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+              Submit Review
+            </button>
+          </form>
 
-            {/* Add Review Form */}
-            <form onSubmit={handleSubmitReview} style={{ background: "#f1f5f9", padding: "12px", borderRadius: "12px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                <span style={{ fontSize: "12px", fontWeight: 600 }}>Rate:</span>
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <span 
-                    key={s} 
-                    onClick={() => setUserRating(s)}
-                    style={{ cursor: "pointer", fontSize: "16px", filter: s <= userRating ? "none" : "grayscale(100%)", opacity: s <= userRating ? 1 : 0.3 }}
-                  >⭐</span>
-                ))}
-              </div>
-              <textarea 
-                value={userComment}
-                onChange={(e) => setUserComment(e.target.value)}
-                placeholder="Share your experience (WiFi speed, vibe...)"
-                style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "8px", fontSize: "12px", minHeight: "60px", resize: "none", marginBottom: "8px" }}
-              />
-              <button type="submit" style={{ width: "100%", padding: "8px", background: "#1e293b", color: "#fff", border: "none", borderRadius: "8px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>
-                Post Review
-              </button>
-            </form>
+          <h3 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "12px", color: "#1e293b" }}>Recent Reviews</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            {cafeReviews.length === 0 ? (
+              <p style={{ fontSize: "12px", color: "#94a3b8", fontStyle: "italic", textAlign: "center" }}>No reviews yet. Be the first!</p>
+            ) : (
+              cafeReviews.map((r, i) => (
+                <div key={i} style={{ padding: "12px", border: "1px solid #f1f5f9", borderRadius: "10px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                    <div style={{ fontSize: "10px", fontWeight: 700, color: "#3b82f6" }}>{"⭐".repeat(Math.round((r.wifi + r.noise + r.outlet + r.vibe) / 4))}</div>
+                    <span style={{ fontSize: "10px", color: "#94a3b8" }}>{r.date}</span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: "12px", color: "#475569", lineHeight: 1.5 }}>{r.comment}</p>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -296,34 +279,23 @@ function CafeModal({ cafe, onClose, reviews, onAddReview }) {
   );
 }
 
-function InfoTile({ icon, label, value, positive, fullWidth }) {
-  return (
-    <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "10px", gridColumn: fullWidth ? "1 / -1" : undefined }}>
-      <div style={{ fontSize: "14px", marginBottom: "2px" }}>{icon}</div>
-      <div style={{ fontSize: "9px", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase" }}>{label}</div>
-      <div style={{ fontSize: "12px", fontWeight: 600, color: positive === true ? "#16a34a" : positive === false ? "#dc2626" : "#1e293b" }}>{value}</div>
-    </div>
-  );
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function MapCard({ searchQuery, nearMeActive, onNearMeUsed }) {
-  const [userPos, setUserPos]           = useState(null);
-  const [cafes, setCafes]               = useState([]);
+  const [userPos, setUserPos] = useState(null);
+  const [cafes, setCafes] = useState([]);
   const [selectedCafe, setSelectedCafe] = useState(null);
-  const [filters, setFilters]           = useState(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [nearMeFilter, setNearMeFilter] = useState(false);
-  
-  // Local Reviews State
+
+  // Review System: Local Cache
   const [reviews, setReviews] = useState(() => {
-    const saved = localStorage.getItem("studyspot_reviews");
+    const saved = localStorage.getItem("studyspot_local_reviews");
     return saved ? JSON.parse(saved) : {};
   });
 
-  // Sync reviews to localStorage
   useEffect(() => {
-    localStorage.setItem("studyspot_reviews", JSON.stringify(reviews));
+    localStorage.setItem("studyspot_local_reviews", JSON.stringify(reviews));
   }, [reviews]);
 
   const handleAddReview = (cafeId, newReview) => {
@@ -331,6 +303,29 @@ export default function MapCard({ searchQuery, nearMeActive, onNearMeUsed }) {
       ...prev,
       [cafeId]: [newReview, ...(prev[cafeId] || [])]
     }));
+  };
+
+  // Formula implementation: [(WiFi*0.3) + (Noise*0.25) + (Outlets*0.25) + (Vibe*0.2)] / 5 * 10
+  const getStudyScore = (cafe) => {
+    const cafeReviews = reviews[cafe.cafe_id] || [];
+    
+    let w, n, o, v;
+
+    if (cafeReviews.length > 0) {
+      // Calculate averages from actual reviews
+      w = cafeReviews.reduce((sum, r) => sum + r.wifi, 0) / cafeReviews.length;
+      n = cafeReviews.reduce((sum, r) => sum + r.noise, 0) / cafeReviews.length;
+      o = cafeReviews.reduce((sum, r) => sum + r.outlet, 0) / cafeReviews.length;
+      v = cafeReviews.reduce((sum, r) => sum + r.vibe, 0) / cafeReviews.length;
+    } else {
+      // Fallback: Initial score based on base attributes (Map 1/0 or Enum to 1-5 scale)
+      w = cafe.wifi_available ? 5 : 1;
+      o = cafe.outlet_available ? 5 : 1;
+      n = cafe.noise_level === 'quiet' ? 5 : (cafe.noise_level === 'moderate' ? 3 : 1);
+      v = 3; // Baseline vibe
+    }
+
+    return ((w * 0.30) + (n * 0.25) + (o * 0.25) + (v * 0.20)) / 5 * 10;
   };
 
   useEffect(() => {
@@ -359,17 +354,18 @@ export default function MapCard({ searchQuery, nearMeActive, onNearMeUsed }) {
   }, [nearMeActive, onNearMeUsed]);
 
   const activeFilterCount = useMemo(() => {
-    let n = 0;
-    if (filters.wifi !== "any") n++;
-    if (filters.outlet !== "any") n++;
-    if (filters.noise !== "any") n++;
-    if (filters.minScore > 0) n++;
-    if (nearMeFilter) n++;
-    return n;
+    let count = 0;
+    if (filters.wifi !== "any") count++;
+    if (filters.outlet !== "any") count++;
+    if (filters.noise !== "any") count++;
+    if (filters.minScore > 0) count++;
+    if (nearMeFilter) count++;
+    return count;
   }, [filters, nearMeFilter]);
 
   const filteredCafes = useMemo(() => {
-    let list = cafes;
+    let list = cafes.map(c => ({ ...c, localScore: getStudyScore(c) }));
+
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       list = list.filter((c) => c.name.toLowerCase().includes(q) || c.address.toLowerCase().includes(q));
@@ -383,10 +379,10 @@ export default function MapCard({ searchQuery, nearMeActive, onNearMeUsed }) {
     if (filters.outlet === "no") list = list.filter((c) => !c.outlet_available);
     if (filters.noise !== "any") list = list.filter((c) => c.noise_level === filters.noise);
     if (filters.minScore > 0) {
-      list = list.filter((c) => Number(c.aggregate_score) >= filters.minScore);
+      list = list.filter((c) => c.localScore >= filters.minScore);
     }
     return list;
-  }, [cafes, searchQuery, nearMeFilter, userPos, filters]);
+  }, [cafes, searchQuery, nearMeFilter, userPos, filters, reviews]);
 
   return (
     <>
@@ -402,7 +398,7 @@ export default function MapCard({ searchQuery, nearMeActive, onNearMeUsed }) {
           </div>
         </div>
 
-        <div className="map-placeholder" style={{ height: "240px", position: "relative" }}>
+        <div style={{ height: "240px", position: "relative" }}>
           {userPos ? (
             <MapContainer center={userPos} zoom={15} style={{ width: "100%", height: "100%" }}>
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -418,7 +414,7 @@ export default function MapCard({ searchQuery, nearMeActive, onNearMeUsed }) {
         <div className="cafe-list-wrapper">
           <div className="cafe-list-scroll">
             {filteredCafes.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "24px", color: "#94a3b8", fontSize: "13px" }}>No spots match.</div>
+              <div style={{ textAlign: "center", padding: "24px", color: "#94a3b8", fontSize: "13px" }}>No spots match filters.</div>
             ) : (
               filteredCafes.map((cafe) => (
                 <div className="cafe-mini-card" key={cafe.cafe_id} onClick={() => setSelectedCafe(cafe)} style={{ cursor: "pointer" }}>
@@ -427,8 +423,8 @@ export default function MapCard({ searchQuery, nearMeActive, onNearMeUsed }) {
                     <div className="cafe-name">{cafe.name}</div>
                     <div className="cafe-meta">{cafe.address.split(",")[0]}</div>
                   </div>
-                  <div style={{ background: scoreColor(cafe.aggregate_score), color: "#fff", fontWeight: 700, fontSize: "12px", borderRadius: "8px", padding: "3px 8px", minWidth: "38px", textAlign: "center" }}>
-                    {scoreLabel(cafe.aggregate_score)}
+                  <div style={{ background: scoreColor(cafe.localScore), color: "#fff", fontWeight: 700, fontSize: "12px", borderRadius: "8px", padding: "3px 8px", minWidth: "38px", textAlign: "center" }}>
+                    {cafe.localScore.toFixed(1)}
                   </div>
                 </div>
               ))
@@ -438,11 +434,12 @@ export default function MapCard({ searchQuery, nearMeActive, onNearMeUsed }) {
       </div>
 
       {selectedCafe && (
-        <CafeModal 
-          cafe={selectedCafe} 
-          onClose={() => setSelectedCafe(null)} 
+        <CafeModal
+          cafe={selectedCafe}
+          onClose={() => setSelectedCafe(null)}
           reviews={reviews}
           onAddReview={handleAddReview}
+          calculatedScore={getStudyScore(selectedCafe)}
         />
       )}
     </>
