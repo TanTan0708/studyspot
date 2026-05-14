@@ -133,7 +133,7 @@ export default function MapCard() {
                 <Marker
                   key={cafe.name}
                   position={[cafe.lat, cafe.lng]}
-                  icon={createCustomIcon("public/marker-pin-02-svgrepo-com.svg")}
+                  icon={createCustomIcon("src/assets/marker-pin-02-svgrepo-com.svg")}
                 >
                   <Popup>
                     <strong>{cafe.name}</strong>
@@ -156,7 +156,7 @@ export default function MapCard() {
             {cafes.map((cafe) => (
               <div className="cafe-mini-card" key={cafe.name}>
                 <img
-                  src={"public/coffee-689-svgrepo-com.svg"}
+                  src={"src/assets/coffee-689-svgrepo-com.svg"}
                   alt={cafe.name}
                   className="cafe-icon"
                   style={{
