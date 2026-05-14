@@ -1,7 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import MapCard from "./MapCard";
 
 export default function Hero() {
+  const [searchQuery, setSearchQuery] = useState("");
+
   useEffect(() => {
     const els = document.querySelectorAll(".hero .fade-up");
     const timer = setTimeout(() => {
@@ -9,13 +11,6 @@ export default function Hero() {
     }, 100);
     return () => clearTimeout(timer);
   }, []);
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      // Hook up your search logic here
-      console.log("Search triggered");
-    }
-  };
 
   return (
     <section className="hero">
@@ -35,9 +30,12 @@ export default function Hero() {
           <input
             type="text"
             placeholder="Search cafes near you…"
-            onKeyDown={handleKeyDown}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <button className="search-btn">📍 Near me</button>
+          <button className="search-btn" onClick={() => setSearchQuery("")}>
+            {searchQuery ? "✕ Clear" : "📍 Near me"}
+          </button>
         </div>
         <div className="hero-actions">
           <button className="btn-primary">Explore cafes</button>
@@ -45,7 +43,10 @@ export default function Hero() {
         </div>
       </div>
 
-      <MapCard />
+      <div className="hero-right">
+        {/* Pass the searchQuery state as a prop to MapCard */}
+        <MapCard searchQuery={searchQuery} />
+      </div>
     </section>
   );
 }

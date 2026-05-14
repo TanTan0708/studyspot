@@ -1,9 +1,8 @@
-// MapCard.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 
-// ── Fix Leaflet's broken default icon paths ──
+// Fix Leaflet icon paths
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -11,7 +10,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-// ── Custom Image Icon — made smaller ─────────────────────────────────────────
+// Custom Icon Function
 function createCustomIcon(imagePath) {
   return L.divIcon({
     className: "custom-marker-container",
@@ -29,15 +28,11 @@ function createCustomIcon(imagePath) {
         box-shadow: 0 3px 6px rgba(0,0,0,0.25);
         border: 2px solid white;
       ">
-        <div style="
-          width: 22px;
-          height: 22px;
-          border-radius: 50%;
-          background-image: url('${imagePath}');
-          background-size: cover;
-          background-position: center;
+        <img src="${imagePath}" style="
+          width: 18px;
+          height: 18px;
           transform: rotate(45deg);
-        "></div>
+        " />
       </div>
     `,
     iconSize: [28, 28],
@@ -46,18 +41,11 @@ function createCustomIcon(imagePath) {
   });
 }
 
-// ── "You are here" blue pulsing dot ──────────────────────────────────────────
 const youAreHereIcon = L.divIcon({
-  className: "",
-  html: `
-    <div style="position:relative;width:20px;height:20px;">
-      <div style="position:absolute;inset:0;background:rgba(59,130,246,0.25);border-radius:50%;animation:pulse 2s ease-out infinite;"></div>
-      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:12px;height:12px;background:#3b82f6;border:2.5px solid #fff;border-radius:50%;box-shadow:0 0 6px rgba(59,130,246,0.6);"></div>
-    </div>
-    <style>@keyframes pulse { 0% { transform: scale(1); opacity: 0.7; } 100% { transform: scale(2.8); opacity: 0; } }</style>
-  `,
-  iconAnchor: [10, 10],
-  popupAnchor: [0, -14],
+  className: "user-marker",
+  html: `<div style="width: 12px; height: 12px; background: #3b82f6; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(59,130,246,0.5);"></div>`,
+  iconSize: [12, 12],
+  iconAnchor: [6, 6],
 });
 
 function Recenter({ pos }) {
@@ -68,120 +56,98 @@ function Recenter({ pos }) {
   return null;
 }
 
-export default function MapCard() {
+export default function MapCard({ searchQuery }) {
   const [userPos, setUserPos] = useState(null);
-  const [geoError, setGeoError] = useState(null);
   const [cafes, setCafes] = useState([]);
+  const [geoError, setGeoError] = useState(null);
 
+  // Fetch from your database via API
   useEffect(() => {
     const SERVER_URL = import.meta.env.VITE_SERVER_URL || "https://studyspot-i2sk.onrender.com";
     fetch(`${SERVER_URL}/api/cafes`)
       .then((res) => res.json())
       .then((data) => setCafes(data))
-      .catch((err) => console.error("Failed to fetch cafes:", err));
+      .catch((err) => console.error("Database fetch error:", err));
   }, []);
 
+  // Filter cafes based on Hero's search input
+  const filteredCafes = useMemo(() => {
+    if (!searchQuery) return cafes;
+    const q = searchQuery.toLowerCase();
+    return cafes.filter(c => 
+      c.name.toLowerCase().includes(q) || 
+      c.address.toLowerCase().includes(q)
+    );
+  }, [searchQuery, cafes]);
+
+  // Geolocation
   useEffect(() => {
     if (!navigator.geolocation) {
-      setGeoError("Geolocation isn't supported.");
+      setGeoError("Not supported");
       return;
     }
     const watchId = navigator.geolocation.watchPosition(
       (pos) => setUserPos([pos.coords.latitude, pos.coords.longitude]),
-      (err) => setGeoError("Location access denied or unavailable."),
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+      (err) => setGeoError("Denied"),
+      { enableHighAccuracy: true }
     );
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
   return (
-    <div className="hero-right">
-      <div className="map-card">
-        <div className="card-header">
-          <span className="card-title">Nearby spots</span>
-          <span className="card-badge">● Live</span>
-        </div>
+    <div className="map-card">
+      <div className="card-header">
+        <span className="card-title">Nearby spots</span>
+        <span className="card-badge">● {filteredCafes.length} Found</span>
+      </div>
 
-        {/* Map — taller now to fill the card better */}
-        <div
-          className="map-placeholder"
-          style={{ padding: 0, overflow: "hidden", borderRadius: "12px", height: "240px" }}
-        >
-          {!userPos && !geoError && (
-            <div className="loading-state">📍 Getting location…</div>
-          )}
-          {geoError && <div className="error-state">⚠️ {geoError}</div>}
-
-          {userPos && (
-            <MapContainer
-              center={userPos}
-              zoom={16}
-              scrollWheelZoom={false}
-              style={{ width: "100%", height: "100%" }}
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              <Recenter pos={userPos} />
-
-              <Marker position={userPos} icon={youAreHereIcon}>
-                <Popup>You are here 📍</Popup>
+      <div className="map-placeholder" style={{ height: "240px", position: "relative" }}>
+        {userPos ? (
+          <MapContainer center={userPos} zoom={15} style={{ width: "100%", height: "100%" }}>
+            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            <Recenter pos={userPos} />
+            <Marker position={userPos} icon={youAreHereIcon} />
+            
+            {filteredCafes.map((cafe) => (
+              <Marker 
+                key={cafe.cafe_id} 
+                position={[cafe.lat, cafe.lng]} 
+                icon={createCustomIcon("public/marker-pin-02-svgrepo-com.svg")}
+              >
+                <Popup>
+                  <div className="popup-box">
+                    <h3 style={{ margin: "0 0 5px 0", fontSize: "14px" }}>{cafe.name}</h3>
+                    <p style={{ margin: "0 0 8px 0", fontSize: "11px", color: "#666" }}>{cafe.address}</p>
+                    <div style={{ fontSize: "10px", borderTop: "1px solid #eee", paddingTop: "5px" }}>
+                      <div>📶 WiFi: {cafe.wifi_available ? "Yes" : "No"}</div>
+                      <div>🔌 Outlets: {cafe.outlet_available ? "Yes" : "No"}</div>
+                      <div>🕒 Closes: {cafe.closing_time}</div>
+                    </div>
+                  </div>
+                </Popup>
               </Marker>
-
-              {cafes.map((cafe) => (
-                <Marker
-                  key={cafe.name}
-                  position={[cafe.lat, cafe.lng]}
-                  icon={createCustomIcon("/marker-pin-02-svgrepo-com.svg")}
-                >
-                  <Popup>
-                    <strong>{cafe.name}</strong>
-                    <br />
-                    {cafe.meta}
-                    <br />
-                    <span style={{ color: "#C4842A", fontWeight: 600 }}>
-                      Score: {cafe.score}
-                    </span>
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
-          )}
-        </div>
-
-        {/* Scrollable cafe list — shows ~3 items, hint arrow if more */}
-        <div className="cafe-list-wrapper">
-          <div className="cafe-list-scroll">
-            {cafes.map((cafe) => (
-              <div className="cafe-mini-card" key={cafe.name}>
-                <img
-                  src={"/coffee-689-svgrepo-com.svg"}
-                  alt={cafe.name}
-                  className="cafe-icon"
-                  style={{
-                    width: "40px",
-                    height: "40px",
-                    borderRadius: "8px",
-                    objectFit: "cover",
-                  }}
-                />
-                <div className="cafe-info">
-                  <div className="cafe-name">{cafe.name}</div>
-                  <div className="cafe-meta">{cafe.meta}</div>
-                </div>
-                <div className="study-score">{cafe.score}</div>
-              </div>
             ))}
-          </div>
+          </MapContainer>
+        ) : (
+          <div className="map-loading">Loading Map...</div>
+        )}
+      </div>
 
-          {/* Scroll hint — only shows when there are more than 3 cafes */}
-          {cafes.length > 3 && (
-            <div className="cafe-scroll-hint">
-              <span>↓</span>
-              <span>{cafes.length - 3} more</span>
+      <div className="cafe-list-wrapper">
+        <div className="cafe-list-scroll">
+          {filteredCafes.map((cafe) => (
+            <div className="cafe-mini-card" key={cafe.cafe_id}>
+              <img src="/coffee-689-svgrepo-com.svg" className="cafe-icon" alt="" />
+              <div className="cafe-info">
+                <div className="cafe-name">{cafe.name}</div>
+                <div className="cafe-meta">{cafe.address.split(',')[0]}</div>
+              </div>
+              {/* StudyScore aligned to the right */}
+              <div className="study-score">
+                {cafe.aggregate_score ? parseFloat(cafe.aggregate_score).toFixed(1) : "—"}
+              </div>
             </div>
-          )}
+          ))}
         </div>
       </div>
     </div>
